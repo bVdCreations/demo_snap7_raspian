@@ -8,12 +8,14 @@ class store_data():
 
     """
 
-    def __init__(self, name, max_values):
-        if os.path(name) is False:
-            self._connection = sqlite3.connect('name')
+    def __init__(self, name, max_values, tables: **args):
+        self._connection = sqlite3.connect(name)
         self._max_values = max_values
 
-    def update_data_row(self):
+    def create_tables(self):
+        pass
+
+    def update_data_row(self, dbname):
         pass
 
     def read_row(self):
