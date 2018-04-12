@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 "python-snap7" = "*"
+openpyxl = "*"
 
 [dev-packages]
 
