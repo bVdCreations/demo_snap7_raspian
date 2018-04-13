@@ -21,7 +21,8 @@ class PLC:
         try:
             self._connect = self._plc.connect(self._IP, rack, slot)
         except ConnectionError:
-            raise ConnectionError("Can not connect to the PLC")
+            print('no connection') # for test
+            # raise ConnectionError("Can not connect to the PLC")
 
     def get_ip(self):
         return self._IP
@@ -131,11 +132,12 @@ class DBvariables:
         if self._variable_type =="CHAR":
             return init_value_string
 
-    def convert_adress(adress_string):
-        split = adress_string.strip().split('.')
-        adress_tuple = (int(split[0]), int(split[1]))
 
-        return adress_tuple
+def convert_adress(adress_string):
+    split = adress_string.strip().split('.')
+    adress_tuple = (int(split[0]), int(split[1]))
+
+    return adress_tuple
     # def ReadMemory(plc,byte,bit,datatype):
     #     result = plc.read_area(areas['MK'],0,byte,datatype)
     #     if datatype==S7WLBit:
@@ -191,3 +193,5 @@ class DBvariables:
 #     plc.write_area(areas["MK"],0,byte,result)
 
 
+if __name__ == '__main__':
+    plc = PLC()
