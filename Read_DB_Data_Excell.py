@@ -64,5 +64,15 @@ class ReadDB_Data:
 
 
 if '__main__' == __name__:
-    pass
+    def printkw (kwargs):
+        for key, values in kwargs.items():
+            print(key)
+            print('-' * 10)
+            print(values)
 
+    for key, values in ReadDB_Data(file_name='DBs_PLC_300.xlsx', file_dir='').read_data().items():
+        print(key)
+        print('-'*10)
+        print(values)
+        print('-'*50)
+        printkw(values)
