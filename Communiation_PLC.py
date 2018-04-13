@@ -56,15 +56,15 @@ class PLC:
 
 class DB_PLC(snap7.util.DB):
 
-    def __init__ (self,db_name, **kwargs):
+    def __init__ (self,db_name, dict_varia):
         self._name = db_name
         self._list_variables = dict()
-        self._create__intc_variables(**kwargs)
+        self._create__intc_variables(dict_varia)
         self._db_read_data = bytearray()
         self._db_write_data = bytearray()
 
-    def _create_intc_variables(self, **kwargs):
-        for key, items in kwargs:
+    def _create_intc_variables(self, dict_varia):
+        for key, items in dict_varia.items():
             self._list_variables.update(
                 {key: self.DBvariables(items['name'], items['adress'], items['type'],
                                        items['Initial value'], items['comment'])}
