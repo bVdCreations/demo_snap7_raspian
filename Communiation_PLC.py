@@ -59,7 +59,7 @@ class DB_PLC(snap7.util.DB):
     def __init__ (self,db_name, dict_varia):
         self._name = db_name
         self._list_variables = dict()
-        self._create__intc_variables(dict_varia)
+        self._create_intc_variables(dict_varia)
         self._db_read_data = bytearray()
         self._db_write_data = bytearray()
 
