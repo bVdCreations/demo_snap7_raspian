@@ -48,7 +48,7 @@ class PLC:
 
     def create_db_inst_from_excell(self, file_name='DBs_PLC_300.xlsx', file_dir=''):
 
-        for key, values in ReadDB_Data(file_name=file_name, file_dir=file_dir).read_data():
+        for key, values in ReadDB_Data(file_name=file_name, file_dir=file_dir).read_data().items():
             self._DB_list.update({key: DB_PLC(key, values)})
 
 
