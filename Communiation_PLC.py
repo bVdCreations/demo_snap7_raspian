@@ -236,4 +236,5 @@ def convert_adress(adress_string):
 
 
 if __name__ == '__main__':
-    plc = PLC()
+    plc = PLC('10.34.0.95',rack=0,slot=2)
+    plc._DB_list['DB1'].read_all
