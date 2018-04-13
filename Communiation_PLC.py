@@ -65,16 +65,20 @@ class DB_PLC(snap7.util.DB):
 
     def _create_intc_variables(self, dict_varia):
         for key, items in dict_varia.items():
+            if 'Comment' in items.keys():
+                comment = items['Comment']
+            else:
+                comment = ''
             self._list_variables.update(
-                {key: DBvariables(items['name'], items['adress'], items['type'],
-                                       items['Initial value'], items['comment'])}
+                {key: DBvariables(items['Name'], items['Adress'], items['Type'],
+                                  items['Initial value'], comment)}
             )
 
 
 class DBvariables:
 
     def __init__(self, variable_name , variable_adress, variable_type,
-                 variable_init_value, variable_value=None, variable_comment=None):
+                 variable_init_value, variable_value=None, variable_comment=''):
 
         self._variable_name = variable_name
         self._variable_adress = convert_adress(variable_adress)
