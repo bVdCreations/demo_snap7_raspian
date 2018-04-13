@@ -8,7 +8,7 @@ class ReadDB_Data:
 
     """
 
-    def __init__(self,file_name='DBs_PLC_300.xlsx',file_dir=''):
+    def __init__(self, file_name='DBs_PLC_300.xlsx', file_dir=''):
         """
 
         :param file_name: the name of the excell file (standard 'DBs_PLC_{}.xlsx'.format plcName
@@ -32,13 +32,15 @@ class ReadDB_Data:
                     for cellObj in rowOfCellObjects:
 
                         if cellObj.value is not None:
-                            returndict[sheetname][namerow].update({sheet_object.cell(column=cellObj.col_idx, row=1).value:cellObj.value})
+                            returndict[sheetname][namerow].update(
+                                {sheet_object.cell(column=cellObj.col_idx, row=1).value: cellObj.value})
 
         return returndict
 
     def get_last_entry_timesheet(self, sheet_object: openpyxl):
         # find the maximum range of data in the sheet
-        return self.get_last_entry_column(sheet_object, row=1) + str(self.get_last_entry_row(sheet_object, start_row=1)-1)
+        return self.get_last_entry_column(sheet_object, row=1) + \
+               str(self.get_last_entry_row(sheet_object, start_row=1)-1)
 
     @staticmethod
     def get_last_entry_row(sheet_object: openpyxl, start_row=1, column=1):
