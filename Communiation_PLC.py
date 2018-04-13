@@ -9,7 +9,7 @@ class PLC:
     def __init__(self, ip_adress, rack=None, slot=None):
         """
         :param ip_adress: string
-        :param rack: int
+        :param rack: int_
         :param slot: int
         """
         self._plc = snap7.client.Client()
@@ -52,12 +52,10 @@ class PLC:
             self._DB_list.update({key: DB_PLC(key, values)})
 
 
-
-
 class DB_PLC(snap7.util.DB):
 
-    def __init__ (self,db_name, dict_varia):
-        self._name = db_name
+    def __init__ (self, db_name, dict_varia):
+        self._db_name = db_name
         self._list_variables = dict()
         self._create_intc_variables(dict_varia)
         self._db_read_data = bytearray()
@@ -74,8 +72,16 @@ class DB_PLC(snap7.util.DB):
                                   items['Initial value'], comment)}
             )
 
+    def read_db(self):
+        self._db_read_data = self._plc.db_get(int(self._db_name[2::]))
 
-class DBvariables:
+    def read_all(self):
+        self.read_db()
+        for key,value in self._list_variables.items():
+            print('{}   =    {}      type={}'.format(key,value.read_var(), value._variable_type))
+
+
+class DBvariables(snap7.util.DB, ):
 
     def __init__(self, variable_name , variable_adress, variable_type,
                  variable_init_value, variable_value=None, variable_comment=''):
@@ -136,24 +142,56 @@ class DBvariables:
         if self._variable_type =="CHAR":
             return init_value_string
 
+    def read_var(self):
+
+        if self._variable_type == "BOOL":
+            var = snap7.util.get_bool(self._db_read_data, self._variable_adress[0], self._variable_adress[1])
+
+        if self._variable_type =="REAL":
+
+            var = snap7.util.get_real(self._db_read_data, self._variable_adress[0])
+
+        if self._variable_type =="BYTE":
+
+            var = 'under constrution'
+
+        if self._variable_type =="WORD":
+            var = 'under constrution'
+
+        if self._variable_type =="DWORD":
+            var = 'under constrution'
+
+        if self._variable_type =="INT":
+            var = snap7.util.get_int(self._db_read_data, self._variable_adress[0])
+
+        if self._variable_type =="DINT":
+            var = 'under constrution'
+
+        if self._variable_type =="S5TIME":
+            var = 'under constrution'
+
+        if self._variable_type =="TIME":
+            var = 'under constrution'
+
+        if self._variable_type =="DATE":
+            var = 'under constrution'
+
+        if self._variable_type =="TIME _OF_DAY":
+            var = 'under constrution'
+
+        if self._variable_type =="CHAR":
+            var = 'under constrution'
+        return var
+
 
 def convert_adress(adress_string):
     split = adress_string.strip().split('.')
     adress_tuple = (int(split[0]), int(split[1]))
 
     return adress_tuple
-    # def ReadMemory(plc,byte,bit,datatype):
-    #     result = plc.read_area(areas['MK'],0,byte,datatype)
-    #     if datatype==S7WLBit:
-    #         return get_bool(result,0,bit)
-    #     elif datatype==S7WLByte or datatype==S7WLWord:
-    #         return get_int(result,0)
-    #     elif datatype==S7WLReal:
-    #         return get_real(result,0)
-    #     elif datatype==S7WLDWord:
-    #         return get_dword(result,0)
-    #     else:
-    #         return None
+
+
+
     #
     # def WriteMemory(plc,byte,bit,datatype,value):
     #     result = plc.read_area(areas['MK'],0,byte,datatype)
