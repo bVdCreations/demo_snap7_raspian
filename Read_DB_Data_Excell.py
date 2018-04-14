@@ -19,8 +19,9 @@ class ReadDB_Data:
         self._workbook = openpyxl.load_workbook(self._file_dire+self._fileName)
 
     def read_data(self):
-        # returns a dict with the als key the week and year of the file
-        # as value the sheet 'Timesheet' of the excel file
+        """ returns a dict with the als key the DB names and as value:
+         a directory with all the variables of the db
+        """
         returndict = dict()
         for sheetname in self._workbook.get_sheet_names():
             if 'DB' in sheetname:
@@ -64,15 +65,4 @@ class ReadDB_Data:
 
 
 if '__main__' == __name__:
-    def printkw (kwargs):
-        for key, values in kwargs.items():
-            print(key)
-            print('-' * 10)
-            print(values)
-
-    for key, values in ReadDB_Data(file_name='DBs_PLC_300.xlsx', file_dir='').read_data().items():
-        print(key)
-        print('-'*10)
-        print(values)
-        print('-'*50)
-        printkw(values)
+    pass
