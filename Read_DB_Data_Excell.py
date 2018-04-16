@@ -65,4 +65,11 @@ class ReadDB_Data:
 
 
 if '__main__' == __name__:
-    pass
+
+    for db, values in ReadDB_Data().read_data().items():
+        print('key ={}'.format(db))
+
+        for keyvar, value in values.items():
+            print('\tkeyvar ={}'.format(keyvar))
+            print('\ttype ={}'.format(value['Type']))
+        print('-'*10)
