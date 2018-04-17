@@ -18,11 +18,9 @@ class PLC:
         self._slot = slot
         self._db_list = dict()
         self.create_db_inst_from_excell()
-        try:
-            self._connect = self._plc.connect(self._IP, rack, slot)
-        except ConnectionError:
-            print('no connection') # for test
-            raise ConnectionError("Can not connect to the PLC")
+        self._connect = self.connect()
+        self.disconnect()
+
 
     def get_ip(self):
         return self._IP
@@ -52,22 +50,37 @@ class PLC:
             self._db_list.update({key: self.DB_PLC(key, values)})
 
     def read_db(self, *args):
+        self.connect()
+        if len(args) == 0:
 
-        if args is None:
-            dbs= self._db_list.keys()
+            dbs = self._db_list.keys()
         else:
-            dbs=args
+            dbs = args
 
-        db_values= dict()
+        db_values = dict()
         for db in dbs:
             db_instance = self._db_list[db]
             db_instance.set_read_data(self._plc.db_get(int(db[2::])))
             db_values.update({db: db_instance.read_variable()})
-
+        self.disconnect()
         return db_values
 
     def read_variable(self, **kwargs):
         pass
+
+    def connect(self):
+        if self._plc.get_connected():
+            print("already connected")
+        else:
+            try:
+                return self._plc.connect(self._IP, self._rack, self._slot)
+            except ConnectionError:
+                raise ConnectionError("Can not connect to the PLC")
+
+    def disconnect(self):
+        self._plc.disconnect()
+
+
 
     class DB_PLC:
 
@@ -118,14 +131,19 @@ class PLC:
 
             var_values = dict()
             for variable in variables:
-                var_inst = self._list_variables[variable]
-                var_inst.set_var_read(self.get_read_data())
-                var_values.update({variable: var_inst.read_var()})
-
+                if variable in self._list_variables.keys():
+                    var_inst = self._list_variables[variable]
+                    var_inst.set_var_read(self.get_read_data())
+                    variable_value = var_inst.read_var()
+                else:
+                    variable_value = \
+                        'This variable {} is not in the variable list of the DB {}'.format(variable, self._db_name)
+                var_values.update({variable:variable_value})
+            return var_values
 
         class DBvariables:
 
-            def __init__(self, variable_name , variable_adress, variable_type,
+            def __init__(self, variable_name, variable_adress, variable_type,
                          variable_init_value, variable_value=None, variable_comment=''):
 
                 self._variable_name = variable_name
@@ -186,11 +204,6 @@ class PLC:
 
             def read_var(self):
 
-                print("variable name = {}".format(self._variable_name))
-                print("variable type = {}".format(self._variable_type))
-                print("variable adress = {}".format(self._variable_adress))
-
-
                 if self._variable_type == "BOOL":
                     var = snap7.util.get_bool(self.get_var_read(), self._variable_adress[0], self._variable_adress[1])
 
@@ -206,7 +219,7 @@ class PLC:
                     var = 'under constrution'
 
                 if self._variable_type =="DWORD":
-                    var = 'under constrution'
+                    var = snap7.util.get_dword(self.get_var_read(), self._variable_adress[0])
 
                 if self._variable_type =="INT":
                     var = snap7.util.get_int(self.get_var_read(), self._variable_adress[0])
@@ -229,11 +242,18 @@ class PLC:
                 if self._variable_type =="CHAR":
                     var = 'under constrution'
 
+                if self._variable_type[:6:] =="STRING":
+                    if self._variable_type[7:-1:]:
+                        var = snap7.util.get_string(self.get_var_read(), self._variable_adress[0],
+                                                 int(self._variable_type[7:-1:]))
+                    else:
+                        var = 'under constrution'
+
                 self._variable_value = var
+
                 return var
 
             def get_var_read(self):
-
                 return self._variable_read_bytearray
 
             def set_var_read(self, var_bytearray):
@@ -242,7 +262,7 @@ class PLC:
             def get_var_write(self):
                 return self._variable_write_bytearray
 
-            def set_var_read(self, var_bytearray):
+            def set_var_write(self, var_bytearray):
                 self._variable_write_bytearray = var_bytearray
 
 
@@ -254,21 +274,6 @@ def convert_adress(adress_string):
 
 
 
-    #
-    # def WriteMemory(plc,byte,bit,datatype,value):
-    #     result = plc.read_area(areas['MK'],0,byte,datatype)
-    #     if datatype==S7WLBit:
-    #         set_bool(result,0,bit,value)
-    #     elif datatype==S7WLByte or datatype==S7WLWord:
-    #         set_int(result,0,value)
-    #     elif datatype==S7WLReal:
-    #         set_real(result,0,value)
-    #     elif datatype==S7WLDWord:
-    #         set_dword(result,0,value)
-    #     plc.write_area(areas["MK"],0,byte,result)
-
-
 if __name__ == '__main__':
-    plc = PLC('10.34.0.95',rack=0,slot=2)
-    print('test')
-    print(plc.read_db('DB2'))
+    plc = PLC('10.34.0.95', rack=0, slot=2)
+    print(plc.read_db())
