@@ -23,10 +23,10 @@ class ReadDB_Data:
          a directory with all the variables of the db
         """
         returndict = dict()
-        for sheetname in self._workbook.get_sheet_names():
+        for sheetname in self._workbook.sheetnames:
             if 'DB' in sheetname:
                 returndict.update({sheetname: dict()})
-                sheet_object = self._workbook.get_sheet_by_name(sheetname)
+                sheet_object = self._workbook[sheetname]
                 for rowOfCellObjects in sheet_object['A3':self.get_last_entry_timesheet(sheet_object)]:
                     namerow = rowOfCellObjects[1].value
                     returndict[sheetname].update({namerow: dict()})
