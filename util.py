@@ -1,6 +1,6 @@
 import struct
 
-from datetime import datetime,time,timedelta, date
+from datetime import datetime, time, timedelta, date
 
 
 def test_time(_bytearray):
@@ -9,11 +9,11 @@ def test_time(_bytearray):
     print('-' * 20)
     print(_bytearray)
     print('-' * 20+ 'Raw')
-    for byte in data:
+    for i, byte in enumerate(data):
         b ='{0:b}'.format(byte)
         b = '0'*(8-len(b))+b
         b = b[0:4]+' '+b[4:8]
-        print('raw data int = {0}  b= {1}'.format(byte,b))
+        print('raw data[{2}] int = {0}  b= {1}'.format(byte, b, i))
 
     # print('-' * 20)
     #
@@ -96,56 +96,64 @@ def get_real(_bytearray, byte_index):
     return real
 
 
-# def set_string(_bytearray, byte_index, value, max_size):
-#     """
-#     Set string value
-#     :params value: string data
-#     :params max_size: max possible string size
-#     """
-#     if six.PY2:
-#         assert isinstance(value, (str, unicode))
-#     else:
-#         assert isinstance(value, str)
-#
-#     size = len(value)
-#     # FAIL HARD WHEN trying to write too much data into PLC
-#     if size > max_size:
-#         raise ValueError('size %s > max_size %s %s' % (size, max_size, value))
-#     # set len count on first position
-#     _bytearray[byte_index + 1] = len(value)
-#
-#     i = 0
-#     # fill array which chr integers
-#     for i, c in enumerate(value):
-#         _bytearray[byte_index + 2 + i] = ord(c)
-#
-#     # fill the rest with empty space
-#     for r in range(i + 1, _bytearray[byte_index]):
-#         _bytearray[byte_index + 2 + r] = ord(' ')
-#
-#
-# def get_string(_bytearray, byte_index, max_size):
-#     """
-#     parse string from bytearray
-#     """
-#     size = _bytearray[byte_index + 1]
-#
-#     if max_size < size:
-#         logger.error("the string is to big for the size encountered in specification")
-#         logger.error("WRONG SIZED STRING ENCOUNTERED")
-#         size = max_size
-#
-#     data = map(chr, _bytearray[byte_index + 2:byte_index + 2 + size])
-#     return "".join(data)
+def set_string(_bytearray, byte_index, value, max_size):
+    """
+    Set string value
+    :params value: string data
+    :params max_size: max possible string size
+    """
+    if six.PY2:
+        assert isinstance(value, (str, unicode))
+    else:
+        assert isinstance(value, str)
+
+    size = len(value)
+    # FAIL HARD WHEN trying to write too much data into PLC
+    if size > max_size:
+        raise ValueError('size %s > max_size %s %s' % (size, max_size, value))
+    # set len count on first position
+    _bytearray[byte_index + 1] = len(value)
+
+    i = 0
+    # fill array which chr integers
+    for i, c in enumerate(value):
+        _bytearray[byte_index + 2 + i] = ord(c)
+
+    # fill the rest with empty space
+    for r in range(i + 1, _bytearray[byte_index]):
+        _bytearray[byte_index + 2 + r] = ord(' ')
+
+
+def get_string(_bytearray, byte_index, max_size):
+    """
+    parse string from bytearray
+    """
+    size = _bytearray[byte_index + 1]
+
+    if max_size < size:
+        print("the string is to big for the size encountered in specification")
+        print("WRONG SIZED STRING ENCOUNTERED")
+        size = max_size
+
+    data = map(chr, _bytearray[byte_index + 2:byte_index + 2 + size])
+    return "".join(data)
 
 
 def get_dword(_bytearray, byte_index):
+    """
+    Get word value from bytearray.
+    double word are represented in four bytes
+    (word = unsigned int)
+    """
     data = _bytearray[byte_index:byte_index + 4]
     dword = struct.unpack('>I', struct.pack('4B', *data))[0]
     return dword
 
 
 def set_dword(_bytearray, byte_index, dword):
+    """
+    Set value in bytearray to double word
+    """
     dword = int(dword)
     _bytes = struct.unpack('4B', struct.pack('>I', dword))
     for i, b in enumerate(_bytes):
@@ -251,28 +259,30 @@ def set_s5time(_bytearray, byte_index, _time: timedelta):
     """
     Set value in bytearray to s5time
     """
-
-    ms = _time.total_seconds()*1000
-
-    _dint = int(ms)
-
-    _bytes = struct.unpack('2B', struct.pack('>h', _dint))
-    _bytearray[byte_index:byte_index + 2] = _bytes
+    print('S5time under constrution')
+    # ms = _time.total_seconds()*1000
+    #
+    # _dint = int(ms)
+    #
+    # _bytes = struct.unpack('2B', struct.pack('>h', _dint))
+    # _bytearray[byte_index:byte_index + 2] = _bytes
 
 
 def get_s5time(_bytearray, byte_index):
     """
     Get time value from bytearray.
     time are represented in two bytes
-    time are set in ms
+    time are set in 10ms
     """
-    test_time(_bytearray)
-    data = _bytearray[byte_index:byte_index + 2]
-    value = struct.unpack('>h', struct.pack('2B', *data))[0]
-    print(value)
-    timevalue = timedelta(milliseconds=value*10)
-
-    return timevalue
+    print('S5time under constrution')
+    return 'S5time under constrution'
+    # test_time(_bytearray)
+    # data = _bytearray[byte_index:byte_index + 2]
+    # value = struct.unpack('>h', struct.pack('2B', *data))[0]
+    # print(value)
+    # timevalue = timedelta(milliseconds=value*10)
+    #
+    # return timevalue
 
 
 def set_date(_bytearray, byte_index, _date: date):
@@ -320,18 +330,16 @@ def get_time_of_day(_bytearray, byte_index):
     """
     value = get_dword(_bytearray,byte_index)
 
-    print('hour= {}'.format(int(value//(3600*10**3))))
-    print('minute= {}'.format(int(value/1000 % 3600) // 60))
-
     time_value = time(hour=int(value//(3600*10**3)), minute=int(value/1000 % 3600) // 60,
-                      second=int(value/1000%60), microsecond=(int(value*1000))%1000)
+                      second=int(value/1000 % 60), microsecond=(int(value*1000)) % 1000)
 
     return time_value
 
+
 def set_char(_bytearray, byte_index, char):
     """
-        Set value in bytearray to int
-        """
+    Set value in bytearray to int
+    """
 
     _int = ord(char)
     _bytes = struct.unpack('2B', struct.pack('h', _int))
@@ -339,6 +347,9 @@ def set_char(_bytearray, byte_index, char):
 
 
 def get_char(_bytearray, byte_index):
+    """
+    get char value from bytearray
+    """
     data = _bytearray[byte_index:byte_index + 2]
     value = struct.unpack('h', struct.pack('2B', *data))[0]
     return chr(value)
