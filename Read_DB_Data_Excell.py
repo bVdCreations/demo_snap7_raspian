@@ -27,8 +27,8 @@ class ReadDB_Data:
             if 'DB' in sheetname:
                 returndict.update({sheetname: dict()})
                 sheet_object = self._workbook[sheetname]
-                last_entry = self.get_last_entry_sheet(sheet_object)
-                
+                last_entry = self.get_last_entry_sheet(sheet_object, offset=-1)
+
                 for rowOfCellObjects in sheet_object['A3':last_entry]:
                     namerow = rowOfCellObjects[1].value
                     returndict[sheetname].update({namerow: dict()})
@@ -49,17 +49,24 @@ class ReadDB_Data:
             sheet_object = self._workbook['info_PLC']
             for rowOfCellObjects in sheet_object['A1':self.get_last_entry_sheet(sheet_object)]:
                 # loop through sheet row by row
-                returndict.update({rowOfCellObjects[0].value: rowOfCellObjects[1].value})
+                key_info = rowOfCellObjects[0].value
+
+                if key_info == 'IP_adress':
+                    value_info = rowOfCellObjects[1].value
+                else:
+                    value_info = int(rowOfCellObjects[1].value)
+
+                returndict.update({key_info: value_info})
             return returndict
         else:
             raise FileNotFoundError('"info_PLC" can not be found in the sheetnames : {}'.format(sheetnames))
 
 
 
-    def get_last_entry_sheet(self, sheet_object: openpyxl):
+    def get_last_entry_sheet(self, sheet_object: openpyxl, offset=0):
         # find the maximum range of data in the sheet
         return self.get_last_entry_column(sheet_object, row=1) + \
-               str(self.get_last_entry_row(sheet_object, start_row=2))
+               str(self.get_last_entry_row(sheet_object, start_row=1)+offset)
 
     @staticmethod
     def get_last_entry_row(sheet_object: openpyxl, start_row=1, column=1):
