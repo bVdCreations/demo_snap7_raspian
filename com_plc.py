@@ -16,18 +16,17 @@ def convert_adress(adress_string):
 
 class PLC:
 
-    def __init__(self, ip_adress, rack=None, slot=None, file_location=''):
+    def __init__(self, file_name, file_location='I_O_info_plc//'):
         """
         :param ip_adress: ip adress in string
         :param rack: rack number
         :param slot: slot number
         """
         self._plc = snap7.client.Client()
-        self._ip = ip_adress
-        self._rack = rack
-        self._slot = slot
-        self._db_list = dict()
-        self.create_db_inst_from_excell(file_name=file_location)
+
+        self._plc_info = dict()
+        self._db_dict = dict()
+        self.read_all_info_excell(file_name=file_name, file_dir=file_location)
         self._connect = self.connect()
         self.disconnect()
 
@@ -35,7 +34,7 @@ class PLC:
         """
         :return: the IP adress of the PLC
         """
-        return self._ip
+        return self._plc_info['IP_adress']
 
     def set_ip(self, ip_adress, rack=None, slot=None):
         """disconnect the plc
@@ -48,34 +47,58 @@ class PLC:
         """
 
         if rack is None:
-            rack = self._rack
+            rack = self._plc_info['rack']
 
         if slot is None:
-            slot = self._slot
+            slot = self._plc_info['slot']
 
         try:
             self._plc.disconnect()
             self._connect = self._plc.connect(ip_adress, rack, slot)
             self.disconnect()
-            self._ip = ip_adress
-            self._rack = rack
-            self._slot = slot
+            self._plc_info['IP_adress'] = ip_adress
+            self._plc_info['rack'] = rack
+            self._plc_info['slot'] = slot
             return True
         except :
             return False
 
-    def create_db_inst_from_excell(self, file_name='', file_dir=''):
+    def connect(self):
+        if self._plc.get_connected():
+            print("already connected")
+        else:
+            try:
+                return self._plc.connect(self._plc_info['IP_adress'], self._plc_info['rack'], self._plc_info['slot'])
+            except ConnectionError:
+                raise ConnectionError("Can not connect to the PLC")
+
+    def disconnect(self):
+        self._plc.disconnect()
+
+    def read_all_info_excell(self, file_name='', file_dir=''):
         """
-        reads in the DB data from an excell file
+        this function files in the dict _plc_info and _db_dict
+        by reading the datat from an excell file
+
+        _db_dict
         the data is structured in a multi level dictionary
         {DB_NAME:{variable name : {variable_info : 'info', ... }   , variable name2: {...} } ,
          DB_NAME2:{... }  }
         from that dict it updates
         a dictionary with the names of the db's as keys and an instance of the class DB_PLC as value
+
+        _plc_info
+        a dict with the keys IP_adress, rack and slot with it's values
         """
 
-        for db_name, variables_dict in ReadDB_Data(file_name=file_name, file_dir=file_dir).read_data().items():
-            self._db_list.update({db_name: self.DB_PLC(db_name, variables_dict)})
+        read_file = ReadDB_Data(file_name=file_name, file_dir=file_dir)
+
+        # _db_dict
+        for db_name, variables_dict in read_file.read_data_dbs().items():
+            self._db_dict.update({db_name: self.DB_PLC(db_name, variables_dict)})
+
+        # _plc_info
+        self._plc_info = read_file.read_info_plc()
 
     def read_db(self, *args):
         """
@@ -85,7 +108,7 @@ class PLC:
         """
         self.connect()
         if len(args) == 0:
-            dbs = self._db_list.keys()
+            dbs = self._db_dict.keys()
         else:
             # assert args in self._db_list, 'one or more arguments do not exits'
             dbs = args
@@ -94,7 +117,7 @@ class PLC:
         # empty dict for storing the read values
 
         for db_name in dbs:
-            db_instance = self._db_list[db_name]
+            db_instance = self._db_dict[db_name]
             _bytearray_db =(self._plc.db_get(db_instance.db_number()))
             # read the complete db byte array
             db_values.update({db_name: dict()})
@@ -112,7 +135,7 @@ class PLC:
             self.connect()
             dict_value = dict()
             for db_name, variables in dict_read.items():
-                db = self._db_list[db_name]
+                db = self._db_dict[db_name]
                 dict_value.update({db_name: dict()})
                 for variable_name in variables:
                     variable_inst = db.variable(variable_name)
@@ -132,7 +155,7 @@ class PLC:
         if self._check_input(dict_write):
             self.connect()
             for db_name, variables in dict_write.items():
-                db = self._db_list[db_name]
+                db = self._db_dict[db_name]
                 for variable_name, value in variables.items():
                     variable_inst = db.variable(variable_name)
                     _bytearray = self._plc.db_read(db.db_number(), variable_inst.get_offset(), variable_inst.get_size())
@@ -149,17 +172,7 @@ class PLC:
         else:
             return True
 
-    def connect(self):
-        if self._plc.get_connected():
-            print("already connected")
-        else:
-            try:
-                return self._plc.connect(self._ip, self._rack, self._slot)
-            except ConnectionError:
-                raise ConnectionError("Can not connect to the PLC")
 
-    def disconnect(self):
-        self._plc.disconnect()
 
     class DB_PLC:
 
@@ -461,7 +474,7 @@ class PLC:
 
 
 if __name__ == '__main__':
-    plc = PLC('10.34.0.95', rack=0, slot=2, file_location='I_O_info_plc//DBs_PLC_300.xlsx')
+    plc = PLC('DBs_PLC_300.xlsx')
     print(plc.read_db('DB3'))
     print('-' * 10)
     print(plc.read_variable({'DB3': ['DB_CHAR']}))
