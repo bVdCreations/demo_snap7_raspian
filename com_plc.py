@@ -447,18 +447,6 @@ class PLC:
                     util.set_string(_bytearray_write, offset, value, self.get_size())
                     return _bytearray_write
 
-            def get_bytearray_read(self):
-                return self._variable_read_bytearray
-
-            def set_bytearray_read(self, var_bytearray):
-                self._variable_read_bytearray= var_bytearray
-
-            def get_bytearray_write(self):
-                return self._variable_write_bytearray
-
-            def set_bytearray_write(self, var_bytearray):
-                self._variable_write_bytearray = var_bytearray
-
             def get_offset(self):
                 return self._variable_adress[0]
 
@@ -467,10 +455,6 @@ class PLC:
 
             def get_size(self):
                 return self._size
-
-
-
-
 
 
 if __name__ == '__main__':
@@ -483,4 +467,3 @@ if __name__ == '__main__':
     plc.write_variable({'DB3': {'DB_CHAR': 'C'}})
     print('-' * 10)
     print(plc.read_variable({'DB3': ['DB_CHAR']}))
-
