@@ -8,7 +8,7 @@ class ReadDB_Data:
 
     """
 
-    def __init__(self, file_name='DBs_PLC_300.xlsx', file_dir=''):
+    def __init__(self, file_name, file_dir=''):
         """
 
         :param file_name: the name of the excell file (standard 'DBs_PLC_{}.xlsx'.format plcName
@@ -18,16 +18,18 @@ class ReadDB_Data:
         self._file_dire = file_dir
         self._workbook = openpyxl.load_workbook(self._file_dire+self._fileName)
 
-    def read_data(self):
-        """ returns a dict with the als key the DB names and as value:
-         a directory with all the variables of the db
+    def read_data_dbs(self):
+        """ returns a dict with the as key the DB names and as value:
+         a dict with all the variables of the db
         """
         returndict = dict()
         for sheetname in self._workbook.sheetnames:
             if 'DB' in sheetname:
                 returndict.update({sheetname: dict()})
                 sheet_object = self._workbook[sheetname]
-                for rowOfCellObjects in sheet_object['A3':self.get_last_entry_timesheet(sheet_object)]:
+                last_entry = self.get_last_entry_sheet(sheet_object)
+                
+                for rowOfCellObjects in sheet_object['A3':last_entry]:
                     namerow = rowOfCellObjects[1].value
                     returndict[sheetname].update({namerow: dict()})
                     for cellObj in rowOfCellObjects:
@@ -38,10 +40,26 @@ class ReadDB_Data:
 
         return returndict
 
-    def get_last_entry_timesheet(self, sheet_object: openpyxl):
+    def read_info_plc(self):
+        """ returns a dict with the keys IP_adress, rack and slot with it's values"""
+        returndict = dict()
+        sheetnames = self._workbook.sheetnames
+        if 'info_PLC' in sheetnames:
+
+            sheet_object = self._workbook['info_PLC']
+            for rowOfCellObjects in sheet_object['A1':self.get_last_entry_sheet(sheet_object)]:
+                # loop through sheet row by row
+                returndict.update({rowOfCellObjects[0].value: rowOfCellObjects[1].value})
+            return returndict
+        else:
+            raise FileNotFoundError('"info_PLC" can not be found in the sheetnames : {}'.format(sheetnames))
+
+
+
+    def get_last_entry_sheet(self, sheet_object: openpyxl):
         # find the maximum range of data in the sheet
         return self.get_last_entry_column(sheet_object, row=1) + \
-               str(self.get_last_entry_row(sheet_object, start_row=1)-1)
+               str(self.get_last_entry_row(sheet_object, start_row=2))
 
     @staticmethod
     def get_last_entry_row(sheet_object: openpyxl, start_row=1, column=1):
@@ -66,7 +84,10 @@ class ReadDB_Data:
 
 if '__main__' == __name__:
 
-    for db, values in ReadDB_Data().read_data().items():
+    for key, value in ReadDB_Data('DBs_PLC_300.xlsx', file_dir='I_O_info_plc//').read_info_plc().items():
+        print('key = {}   value = {}'.format(key, value))
+
+    for db, values in ReadDB_Data('DBs_PLC_300.xlsx', file_dir='I_O_info_plc//').read_data_dbs().items():
         print('key ={}'.format(db))
 
         for keyvar, value in values.items():
