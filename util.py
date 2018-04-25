@@ -3,7 +3,7 @@ import struct
 from datetime import datetime, time, timedelta, date
 
 
-def test_time(_bytearray):
+def test_bytearray(_bytearray):
     data = _bytearray
 
     print('-' * 20)
@@ -28,8 +28,9 @@ def test_time(_bytearray):
 
 def convert_adress(adress_string):
 
-    if adress_string[0] == ('I' or 'Q'):
+    if adress_string[0] == 'I' or adress_string[0] =='Q':
         adress_string = adress_string[2::]
+
 
     split = adress_string.strip().split('.')
     adress_tuple = (int(split[0]), int(split[1]))

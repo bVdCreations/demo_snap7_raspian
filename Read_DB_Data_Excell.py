@@ -89,7 +89,7 @@ class ReadDB_Data:
 
                 # loop through the cells in the row
                 for cellObj in rowOfCellObjects:
-                    
+
                     if cellObj.value is not None:
                         return_dict[store][symbol_name].update(
                             {sheet_object.cell(column=cellObj.col_idx, row=1).value: cellObj.value})

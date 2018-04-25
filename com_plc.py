@@ -76,7 +76,7 @@ class PLC:
 
     def read_all_info_excell(self, file_name='', file_dir=''):
         """
-        this function files in the dict _plc_info and _db_dict
+        this function files in the dict _plc_info , _db_dict , _input_dict and _output_dict
         by reading the datat from an excell file
 
         _db_dict
@@ -88,6 +88,10 @@ class PLC:
 
         _plc_info
         a dict with the keys IP_adress, rack and slot with it's values
+
+        _input_dict and _output_dict
+        these are dict with respective the input and outputs stored in them and as keys the symbol names
+        the values are dict with the Symbol , Adress Data type and Comment
         """
 
         read_file = ReadDB_Data(file_name=file_name, file_dir=file_dir)
@@ -98,6 +102,25 @@ class PLC:
 
         # _plc_info
         self._plc_info = read_file.read_info_plc()
+
+        # _input_dict and _output_dict
+        for i_or_o , io_values in read_file.read_i_o().items():
+
+            # store in the right dict based on the keys
+            if i_or_o == 'Input':
+                store = self._input_dict
+            elif i_or_o == 'Output':
+                store = self._output_dict
+            else:
+                raise ValueError('the keys "{}" should be Input or Output'.format(i_or_o.keys()))
+            for io_name , values_io in io_values.items():
+                if 'Comment' in values_io.keys():
+                    comment = values_io['Comment']
+                else:
+                    comment = ''
+                store.update({io_name: self.IO_PLC(values_io['Symbol'], values_io['Adress'],
+                                                   values_io['Data type'], comment)}
+                             )
 
     def read_all_db(self, *args):
 
@@ -179,8 +202,9 @@ class PLC:
         self.connect()
         input_instance = self._input_dict[input_name]
         # read the bytearray
-        _bytearray = self._plc.read_area(areas['PA'], 0, input_instance.get_byte(), input_instance.get_size())
-
+        print(input_instance.get_byte_offset())
+        _bytearray = self._plc.read_area(areas['PE'], 0, input_instance.get_byte_offset(), input_instance.get_size())
+        util.test_bytearray(_bytearray)
         # get the value from the bytearray
         value = input_instance.read_bytearray(_bytearray)
 
@@ -203,13 +227,13 @@ class PLC:
         self.connect()
         input_instance = self._input_dict[input_name]
         # read the bytearray
-        _bytearray = self._plc.read_area(areas['PA'], 0, input_instance.get_byte(), input_instance.get_size())
+        _bytearray = self._plc.read_area(areas['PE'], 0, input_instance.get_byte_offset(), input_instance.get_size())
 
         # write the value in the bytearray
         input_instance.write_bytearray(_bytearray, value)
 
         # write the nex bytearray in the plc
-        self._plc.write_area(areas['PA'], 0, input_instance.get_byte(), _bytearray)
+        self._plc.write_area(areas['PE'], 0, input_instance.get_byte_offset(), _bytearray)
 
         # disconnect from the plc
         self.disconnect()
@@ -221,6 +245,23 @@ class PLC:
             return False
         else:
             return True
+
+    def __str__(self):
+        string = '=' * 10 + 'plc info' + '=' * 10 + '\n\n'
+        for key, value in self._plc_info.items():
+            string += '\t{} = {} \n'.format(key, value)
+        string += '=' * 10 + "DB('s)" + '=' * 10 + '\n\n'
+        for dbs in self._db_dict.values():
+            string += dbs.__str__()
+        string += '=' * 10 + "inputs" + '=' * 10 + '\n\n'
+        for inputs in self._input_dict.values():
+            string += '\t' + inputs.__str__()
+
+        string += '=' * 10 + "outputs" + '=' * 10 + '\n\n'
+        for outputs in self._output_dict.values():
+            string += '\t' + outputs.__str__()
+
+        return string
 
     class DB_PLC:
 
@@ -269,6 +310,12 @@ class PLC:
             """
             assert variable_name in self._dict_variables.keys(), 'variable_name does not exits'
             return self._dict_variables[variable_name]
+
+        def __str__(self):
+            string = '-'*10 + '{}'.format(self._db_name) + '-'*10 + '\n'
+            for values in self._dict_variables.values():
+                string += values.__str__()
+            return string
 
         class DBvariables:
 
@@ -499,6 +546,18 @@ class PLC:
             def get_size(self):
                 return self._size
 
+            def __str__(self):
+
+                string = "\n\tname = {}\n\t-------------------\n\t\tadress = {}\n\t\ttype = {}\n\t\tvalue = {}\n\t\t" \
+                         "init_value = {}\n\t\tsize = {}\n\t\tcomment = {}\n\n".format(self._variable_name,
+                                                                                       self._variable_adress,
+                                                                                       self._variable_type,
+                                                                                       self._variable_value,
+                                                                                       self._variable_init_value,
+                                                                                       self._size,
+                                                                                       self._variable_comment)
+
+                return string
 
     class IO_PLC:
 
@@ -510,9 +569,9 @@ class PLC:
             :param data_type: type of the data of the IO
             :param comment: the comment that is given in the symbol table
             """
-            self._synbol_name = symbol_name
+            self._symbol_name = symbol_name
             self._type = adress_string[0:2:].strip()
-            self._adress_byte, self._ardess_bit = util.convert_adress(adress_string)
+            self._adress_byte, self._adress_bit = util.convert_adress(adress_string)
             self._size = util.size(data_type)
             self._data_type = data_type
             self._comment = comment
@@ -524,16 +583,17 @@ class PLC:
             else:
                 offset = 0
 
-            if self._type == "BOOL":
+            if self._data_type == "BOOL":
+
                 return util.get_bool(_read_bytearry, offset, self.get_bit_offset())
 
-            if self._type == "BYTE":
+            if self._data_type == "BYTE":
                 return util.get_byte(_read_bytearry, offset)
 
-            if self._type == "WORD":
+            if self._data_type == "WORD":
                 return util.get_word(_read_bytearry, offset)
 
-            if self._type == "DWORD":
+            if self._data_type == "DWORD":
                 return snap7.util.get_dword(_read_bytearry, offset)
 
         def write_bytearray(self, write_bytearray, value, offset_on=False):
@@ -551,20 +611,20 @@ class PLC:
             else:
                 offset = 0
 
-            if self._type == "BOOL":
+            if self._data_type == "BOOL":
                 util.set_bool(write_bytearray, offset,
                               self.get_bit_offset(), value)
                 return write_bytearray
 
-            if self._type == "BYTE":
+            if self._data_type == "BYTE":
                 util.set_byte(write_bytearray, offset, value)
                 return write_bytearray
 
-            if self._type == "WORD":
+            if self._data_type == "WORD":
                 util.set_word(write_bytearray, offset, value)
                 return write_bytearray
 
-            if self._type == "DWORD":
+            if self._data_type == "DWORD":
                 util.set_dword(write_bytearray, offset, value)
                 return write_bytearray
 
@@ -572,7 +632,23 @@ class PLC:
             return self._adress_byte
 
         def get_bit_offset(self):
-            return self._ardess_bit
+            return self._adress_bit
+
+        def get_size(self):
+            return self._size
+
+        def __str__(self):
+
+            string = "\n\tname = {}\n\t------------------\n\t\tdata type = {}\n\t\ttype = {}\n\t\tbyte = {}\n\t\t" \
+                     "bit = {}\n\t\tsize = {}\n\t\tcomment = {}\n\n".format(self._symbol_name,
+                                                                            self._data_type,
+                                                                            self._type,
+                                                                            self._adress_byte,
+                                                                            self._adress_bit,
+                                                                            self._size,
+                                                                            self._comment)
+
+            return string
 
 
 areas = {
@@ -587,11 +663,15 @@ areas = {
 
 if __name__ == '__main__':
     plc = PLC('DBs_PLC_300.xlsx')
-    print(plc.read_all_db('DB3'))
-    print('-' * 10)
-    print(plc.read_db_variables({'DB3': ['DB_CHAR']}))
-    print('-'*10)
-    print('here')
-    plc.write_db_variables({'DB3': {'DB_CHAR': 'C'}})
-    print('-' * 10)
-    print(plc.read_db_variables({'DB3': ['DB_CHAR']}))
+    print(plc.read_input('test_name'))
+    plc.write_input('test_name', False)
+    print(plc.read_input('test_name'))
+    # print(plc.read_all_db('DB3'))
+    # print('-' * 10)
+    # print(plc.read_db_variables({'DB3': ['DB_CHAR']}))
+    # print('-'*10)
+    # print('here')
+    # plc.write_db_variables({'DB3': {'DB_CHAR': 'C'}})
+    # print('-' * 10)
+    # print(plc.read_db_variables({'DB3': ['DB_CHAR']}))
+
