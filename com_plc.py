@@ -7,13 +7,6 @@ from datetime import datetime, time, timedelta, date
 from Read_DB_Data_Excell import ReadDB_Data
 
 
-def convert_adress(adress_string):
-    split = adress_string.strip().split('.')
-    adress_tuple = (int(split[0]), int(split[1]))
-
-    return adress_tuple
-
-
 class PLC:
 
     def __init__(self, file_name, file_location='I_O_info_plc//'):
@@ -229,7 +222,7 @@ class PLC:
                          variable_init_value_string, variable_value=None, variable_comment=''):
 
                 self._variable_name = variable_name
-                self._variable_adress = convert_adress(variable_adress)
+                self._variable_adress = util.convert_adress(variable_adress)
                 self._variable_type = variable_type
                 self._variable_value = variable_value
                 self._variable_comment = variable_comment

@@ -25,6 +25,14 @@ def test_time(_bytearray):
     # print(timevalue.microseconds)
     # print('-' * 20)
 
+
+def convert_adress(adress_string):
+    split = adress_string.strip().split('.')
+    adress_tuple = (int(split[0]), int(split[1]))
+
+    return adress_tuple
+
+
 def get_bool(_bytearray, byte_index, bool_index):
     """
     Get the boolean value from location in bytearray
