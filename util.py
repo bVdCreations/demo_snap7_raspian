@@ -27,6 +27,10 @@ def test_time(_bytearray):
 
 
 def convert_adress(adress_string):
+
+    if adress_string[0] == ('I' or 'Q'):
+        adress_string = adress_string[2::]
+
     split = adress_string.strip().split('.')
     adress_tuple = (int(split[0]), int(split[1]))
 
@@ -178,6 +182,7 @@ def get_word(_bytearray, byte_index):
     value = struct.unpack('>H', struct.pack('2B', *data))[0]
     return value
 
+
 def set_word(_bytearray, byte_index, _word):
     """
     Set value in bytearray to word
@@ -187,6 +192,7 @@ def set_word(_bytearray, byte_index, _word):
     assert _word > 0, 'a word can only be a positive value'
     _bytes = struct.unpack('2B', struct.pack('>H', _word))
     _bytearray[byte_index:byte_index + 2] = _bytes
+
 
 def set_dint(_bytearray, byte_index, _dint):
     """
@@ -221,7 +227,6 @@ def set_byte(_bytearray, byte_index, _byte):
     _bytearray.reverse()
 
 
-
 def get_byte(_bytearray, byte_index):
     """
     Get hex value from bytearray.
@@ -254,7 +259,11 @@ def set_time(_bytearray, byte_index, _time: timedelta):
 def get_time(_bytearray, byte_index):
     """
     Get time value from bytearray.
+<<<<<<< HEAD
     time are represented in two bytes
+=======
+    time are represented in four bytes
+>>>>>>> com_PLC
     time are set in ms
     """
     data = _bytearray[byte_index:byte_index + 4]
@@ -361,3 +370,30 @@ def get_char(_bytearray, byte_index):
     data = _bytearray[byte_index:byte_index + 2]
     value = struct.unpack('h', struct.pack('2B', *data))[0]
     return chr(value)
+
+
+def size(datatype):
+    '''
+    :param datatype: the datatype as a string
+    :return: the byte size of the data type
+    '''
+    types = {
+        'BOOL': 1,
+        'BYTE': 2,
+        'WORD': 2,
+        'DWORD': 4,
+        'INT': 2,
+        'DINT': 4,
+        'REAL': 4,
+        'S5TIME': 2,
+        'TIME': 2,
+        'DATE': 2,
+        'TIME_OF_DAY': 4,
+        'CHAR': 2,
+        'STRING[254]': 256
+    }
+
+    assert datatype in types, \
+        ('the datatype "{}" does not exits, it must be one of the following {}'.format(datatype, types.keys()))
+
+    return types[datatype]

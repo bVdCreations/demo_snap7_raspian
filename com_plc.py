@@ -19,6 +19,10 @@ class PLC:
 
         self._plc_info = dict()
         self._db_dict = dict()
+
+        self._input_dict = dict()
+        self._output_dict = dict()
+
         self.read_all_info_excell(file_name=file_name, file_dir=file_location)
         self._connect = self.connect()
         self.disconnect()
@@ -93,7 +97,9 @@ class PLC:
         # _plc_info
         self._plc_info = read_file.read_info_plc()
 
-    def read_db(self, *args):
+
+    def read_all_db(self, *args):
+
         """
         This method read the complete DB from the PLC
         :param args: db_names (if None it will read all the db's)
@@ -122,7 +128,9 @@ class PLC:
         self.disconnect()
         return db_values
 
-    def read_variable(self, dict_read):
+
+    def read_db_variables(self, dict_read):
+
 
         if self._check_input(dict_read):
             self.connect()
@@ -133,8 +141,8 @@ class PLC:
                 for variable_name in variables:
                     variable_inst = db.variable(variable_name)
                     _bytearray = self._plc.db_read(db.db_number(), variable_inst.get_offset(), variable_inst.get_size())
-                    print('read {}'.format(_bytearray))
-                    util.test_time(_bytearray)
+
+                    # util.test_time(_bytearray)
 
 
                     value = variable_inst.read_var(read_bytearray=_bytearray)
@@ -152,20 +160,78 @@ class PLC:
                 for variable_name, value in variables.items():
                     variable_inst = db.variable(variable_name)
                     _bytearray = self._plc.db_read(db.db_number(), variable_inst.get_offset(), variable_inst.get_size())
-                    variable_inst.write_var(value , write_bytearray=_bytearray)
+
+                    variable_inst.write_var(value, write_bytearray=_bytearray)
+
 
                     self._plc.db_write(db.db_number(), variable_inst.get_offset(), _bytearray)
 
             self.disconnect()
 
+
     # To do
     def _check_input(self, dict_input):
+        pass
+
+
+
+    def read_input(self, input_name):
+        """
+        this method read the value of the given input
+        :param input_name: the name of the input
+        :return: value of the input
+        """
+        # check if input name exits in the input dict
+        assert input_name in self._input_dict, \
+            ('the input "{}" is not in the input dict = {}'.format(input_name, self._input_dict.keys()))
+
+        # connect to the plc
+        self.connect()
+        input_instance = self._input_dict[input_name]
+        # read the bytearray
+        _bytearray = self._plc.read_area(areas['PA'], 0, input_instance.get_byte(), input_instance.get_size())
+
+        # get the value from the bytearray
+        value = input_instance.read_bytearray(_bytearray)
+
+        # discoonect from the plc
+        self.disconnect()
+        return value
+
+    def write_input(self, input_name, value):
+        """
+        this method writes a value into a given input
+        :param input_name: the name of the input
+        :param value: the value that needs to written into the input
+        :return: value of the input
+        """
+        # check if input name exits in the input dict
+        assert input_name in self._input_dict, \
+            ('the input "{}" is not in the input dict = {}'.format(input_name, self._input_dict.keys()))
+
+        # connect to the plc
+        self.connect()
+        input_instance = self._input_dict[input_name]
+        # read the bytearray
+        _bytearray = self._plc.read_area(areas['PA'], 0, input_instance.get_byte(), input_instance.get_size())
+
+        # write the value in the bytearray
+        input_instance.write_bytearray(_bytearray, value)
+
+        # write the nex bytearray in the plc
+        self._plc.write_area(areas['PA'], 0, input_instance.get_byte(), _bytearray)
+
+        # disconnect from the plc
+        self.disconnect()
+
+
+    # To do
+    def _check_input_db(self, dict_input):
+
         if len(dict_input) == 0:
             return False
         else:
             return True
-
-
 
     class DB_PLC:
 
@@ -200,9 +266,10 @@ class PLC:
         def db_number(self):
             return self._db_number
 
-        def update_variables(self, update_dict):
-            for key, value in update_dict.items():
-                self._dict_variables.update({key: value})
+        # def update_variables(self, update_dict):
+        #     for key, value in update_dict.items():
+        #         self._dict_variables.update({key: value})
+
 
         def variable_dict(self):
             """:return: the variable dict of the db """
@@ -448,6 +515,86 @@ class PLC:
 
             def get_size(self):
                 return self._size
+
+
+    class IO_PLC:
+
+        def __init__(self, symbol_name, adress_string, data_type, comment=''):
+            """
+
+            :param symbol_name: the name off the io
+            :param adress_string: the adress of the io (example : I  4.0 )
+            :param data_type: type of the data of the IO
+            :param comment: the comment that is given in the symbol table
+            """
+            self._synbol_name = symbol_name
+            self._type = adress_string[0:2:].strip()
+            self._adress_byte, self._ardess_bit = util.convert_adress(adress_string)
+            self._size = util.size(data_type)
+            self._data_type = data_type
+            self._comment = comment
+
+        def read_bytearray(self, _read_bytearry, offset_on=False):
+
+            if offset_on is True:
+                offset = self.get_offset()
+            else:
+                offset = 0
+
+            if self._type == "BOOL":
+                return util.get_bool(_read_bytearry, offset, self.get_bit_offset())
+
+            if self._type == "BYTE":
+                return util.get_byte(_read_bytearry, offset)
+
+            if self._type == "WORD":
+                return util.get_word(_read_bytearry, offset)
+
+            if self._type == "DWORD":
+                return snap7.util.get_dword(_read_bytearry, offset)
+
+        def write_bytearray(self, write_bytearray, value, offset_on=False):
+            """
+
+            :param value: the value that needs to be written in the db
+            :param offset_on: if True the offset = get_offset if false offset=0
+                              this depend if the bytearray is a full db or only the variable part of the db
+            :param write_bytearray: this byttearray will be used to write the value in
+            :return:the bytearray with the written value inside
+            """
+
+            if offset_on is True:
+                offset = self.get_offset()
+            else:
+                offset = 0
+
+            if self._variable_type == "BOOL":
+                util.set_bool(write_bytearray, offset,
+                              self.get_bit_offset(), value)
+                return write_bytearray
+
+            if self._variable_type == "BYTE":
+                util.set_byte(write_bytearray, offset, value)
+                return write_bytearray
+
+            if self._variable_type == "WORD":
+                util.set_word(write_bytearray, offset, value)
+                return write_bytearray
+
+            if self._variable_type == "DWORD":
+                util.set_dword(write_bytearray, offset, value)
+                return write_bytearray
+
+
+areas = {
+    'PE': 0x81,
+    'PA': 0x82,
+    'MK': 0x83,
+    'DB': 0x84,
+    'CT': 0x1C,
+    'TM': 0x1D,
+}
+
 
 
 if __name__ == '__main__':
