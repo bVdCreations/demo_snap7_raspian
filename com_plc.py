@@ -11,9 +11,11 @@ class PLC:
 
     def __init__(self, file_name, file_location='I_O_info_plc//'):
         """
-        :param ip_adress: ip adress in string
-        :param rack: rack number
-        :param slot: slot number
+        by reading the excell file this class initial all it's instances from it's subclasses
+        and stores all the respective info in the right instances so it has all the info
+        to easily to communicate whit the plc
+        :param file_name: the name of the file where all the info is about it's respective plc
+        :param file_location: the location of the file
         """
         self._plc = snap7.client.Client()
 
@@ -97,7 +99,6 @@ class PLC:
         # _plc_info
         self._plc_info = read_file.read_info_plc()
 
-
     def read_all_db(self, *args):
 
         """
@@ -117,7 +118,7 @@ class PLC:
 
         for db_name in dbs:
             db_instance = self._db_dict[db_name]
-            _bytearray_db =(self._plc.db_get(db_instance.db_number()))
+            _bytearray_db = (self._plc.db_get(db_instance.db_number()))
             # read the complete db byte array
             db_values.update({db_name: dict()})
 
@@ -128,11 +129,9 @@ class PLC:
         self.disconnect()
         return db_values
 
-
     def read_db_variables(self, dict_read):
 
-
-        if self._check_input(dict_read):
+        if self._check_input_db(dict_read):
             self.connect()
             dict_value = dict()
             for db_name, variables in dict_read.items():
@@ -144,16 +143,15 @@ class PLC:
 
                     # util.test_time(_bytearray)
 
-
                     value = variable_inst.read_var(read_bytearray=_bytearray)
                     dict_value[db_name].update({variable_name: value})
 
             self.disconnect()
             return dict_value
 
-    def write_variable(self, dict_write):
+    def write_db_variables(self, dict_write):
 
-        if self._check_input(dict_write):
+        if self._check_input_db(dict_write):
             self.connect()
             for db_name, variables in dict_write.items():
                 db = self._db_dict[db_name]
@@ -163,17 +161,9 @@ class PLC:
 
                     variable_inst.write_var(value, write_bytearray=_bytearray)
 
-
                     self._plc.db_write(db.db_number(), variable_inst.get_offset(), _bytearray)
 
             self.disconnect()
-
-
-    # To do
-    def _check_input(self, dict_input):
-        pass
-
-
 
     def read_input(self, input_name):
         """
@@ -224,7 +214,6 @@ class PLC:
         # disconnect from the plc
         self.disconnect()
 
-
     # To do
     def _check_input_db(self, dict_input):
 
@@ -241,7 +230,6 @@ class PLC:
             self._db_number = int(db_name[2::])
             self._dict_variables = dict()
             self._create_variables(dict_varia)
-
 
         def _create_variables(self, dict_varia):
             """
@@ -269,7 +257,6 @@ class PLC:
         # def update_variables(self, update_dict):
         #     for key, value in update_dict.items():
         #         self._dict_variables.update({key: value})
-
 
         def variable_dict(self):
             """:return: the variable dict of the db """
@@ -380,46 +367,45 @@ class PLC:
                     offset = 0
 
                 if read_bytearray is None:
-                    _bytearray_read = self.get_bytearray_read()
+                    _bytearray_read = read_bytearray
                 else:
                     _bytearray_read = read_bytearray
 
                 if self._variable_type == "BOOL":
-                    var = snap7.util.get_bool(_bytearray_read, offset, self.get_bit_offset())
+                    return snap7.util.get_bool(_bytearray_read, offset, self.get_bit_offset())
 
                 if self._variable_type == "REAL":
-
-                    var = snap7.util.get_real(_bytearray_read, offset)
+                    return snap7.util.get_real(_bytearray_read, offset)
 
                 if self._variable_type == "BYTE":
-                    var = util.get_byte(_bytearray_read, offset)
+                    return util.get_byte(_bytearray_read, offset)
 
                 if self._variable_type == "WORD":
-                    var = util.get_word(_bytearray_read, offset)
+                    return util.get_word(_bytearray_read, offset)
 
                 if self._variable_type == "DWORD":
-                    var = snap7.util.get_dword(_bytearray_read, offset)
+                    return snap7.util.get_dword(_bytearray_read, offset)
 
                 if self._variable_type == "INT":
-                    var = snap7.util.get_int(_bytearray_read, offset)
+                    return snap7.util.get_int(_bytearray_read, offset)
 
                 if self._variable_type == "DINT":
-                    var = util.get_dint(_bytearray_read, offset)
+                    return util.get_dint(_bytearray_read, offset)
 
                 if self._variable_type == "S5TIME":
-                    var = util.get_s5time(_bytearray_read, offset)
+                    return util.get_s5time(_bytearray_read, offset)
 
                 if self._variable_type == "TIME":
-                    var = util.get_time(_bytearray_read, offset)
+                    return util.get_time(_bytearray_read, offset)
 
                 if self._variable_type == "DATE":
-                    var = util.get_date(_bytearray_read, offset)
+                    return util.get_date(_bytearray_read, offset)
 
                 if self._variable_type == "TIME_OF_DAY":
-                    var = util.get_time_of_day(_bytearray_read, offset)
+                    return util.get_time_of_day(_bytearray_read, offset)
 
                 if self._variable_type == "CHAR":
-                    var = util.get_char(_bytearray_read, offset)
+                    return util.get_char(_bytearray_read, offset)
 
                 if self._variable_type[:6:] == "STRING":
                     if self._variable_type[7:-1:]:
@@ -427,12 +413,9 @@ class PLC:
                                                     self.get_size())
                     else:
                         var = 'under constrution'
+                    return var
 
-                self._variable_value = var
-
-                return var
-
-            def write_var(self, value , offset_on=False, write_bytearray=None):
+            def write_var(self, value, offset_on=False, write_bytearray=None):
                 """
 
                 :param value: the value that needs to be written in the db
@@ -443,20 +426,20 @@ class PLC:
                 :return:the bytearray with the written value inside
                 """
 
-                if offset_on == True:
+                if offset_on is True:
                     offset = self.get_offset()
                 else:
                     offset = 0
 
                 if write_bytearray is None:
                     print('underconstrution : feature create bytearray to write')
-                    _bytearray_write = self.get_bytearray_write()
+                    # _bytearray_write = self.get_bytearray_write()
+                    _bytearray_write = write_bytearray
                 else:
                     _bytearray_write = write_bytearray
 
                 if self._variable_type == "BOOL":
-                    util.set_bool(_bytearray_write, offset,
-                                              self.get_bit_offset(), value)
+                    util.set_bool(_bytearray_write, offset, self.get_bit_offset(), value)
                     return _bytearray_write
 
                 if self._variable_type == "REAL":
@@ -537,7 +520,7 @@ class PLC:
         def read_bytearray(self, _read_bytearry, offset_on=False):
 
             if offset_on is True:
-                offset = self.get_offset()
+                offset = self.get_byte_offset()
             else:
                 offset = 0
 
@@ -564,26 +547,32 @@ class PLC:
             """
 
             if offset_on is True:
-                offset = self.get_offset()
+                offset = self.get_byte_offset()
             else:
                 offset = 0
 
-            if self._variable_type == "BOOL":
+            if self._type == "BOOL":
                 util.set_bool(write_bytearray, offset,
                               self.get_bit_offset(), value)
                 return write_bytearray
 
-            if self._variable_type == "BYTE":
+            if self._type == "BYTE":
                 util.set_byte(write_bytearray, offset, value)
                 return write_bytearray
 
-            if self._variable_type == "WORD":
+            if self._type == "WORD":
                 util.set_word(write_bytearray, offset, value)
                 return write_bytearray
 
-            if self._variable_type == "DWORD":
+            if self._type == "DWORD":
                 util.set_dword(write_bytearray, offset, value)
                 return write_bytearray
+
+        def get_byte_offset(self):
+            return self._adress_byte
+
+        def get_bit_offset(self):
+            return self._ardess_bit
 
 
 areas = {
@@ -596,14 +585,13 @@ areas = {
 }
 
 
-
 if __name__ == '__main__':
     plc = PLC('DBs_PLC_300.xlsx')
-    print(plc.read_db('DB3'))
+    print(plc.read_all_db('DB3'))
     print('-' * 10)
-    print(plc.read_variable({'DB3': ['DB_CHAR']}))
+    print(plc.read_db_variables({'DB3': ['DB_CHAR']}))
     print('-'*10)
     print('here')
-    plc.write_variable({'DB3': {'DB_CHAR': 'C'}})
+    plc.write_db_variables({'DB3': {'DB_CHAR': 'C'}})
     print('-' * 10)
-    print(plc.read_variable({'DB3': ['DB_CHAR']}))
+    print(plc.read_db_variables({'DB3': ['DB_CHAR']}))
